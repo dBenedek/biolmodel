@@ -1,5 +1,4 @@
 library(igraph)
-library(lsa)
 plots <- c()
 # generate.network.B <- function(N, links.per.step)
 # Use: generates a random network by adding nodes one by one and linking the new nodes to old ones such that old nodes with more existing links
@@ -18,7 +17,7 @@ define_metadata <- function(N){
     # Define sex 
     node_sex <- sample(c('F', 'M'), size = 1, prob = c(0.5, 0.5))
     # Define age group
-    node_age <- sample(c('child', 'adult', 'elderly'), size = 1, prob = c(0.24, 0.63, 0.13))
+    node_age <- sample(c('child', 'adult', 'elderly'), size = 1, prob = c(0.33, 0.33, 0.33))
     L[i, 1] <- i
     L[i, 2] <- node_age
     L[i, 3] <- node_sex
@@ -28,7 +27,6 @@ define_metadata <- function(N){
 }
 # Get metadata information
 metadata <- define_metadata(N)
-print(metadata)
 
 generate.network.B <- function(N,links.per.step){
   L <- matrix(nrow=0,ncol=2) # initialize matrix with zero rows
@@ -61,7 +59,7 @@ generate.network.B <- function(N,links.per.step){
 
 # Simulate epidemics with barabasi graph
 
-N = 200 # number of individuals
+N = 100 # number of individuals
 simlength <- 30 # number of time steps
 
 plot.spread <- TRUE # switch to set whether you would like to plot the spreading of the epidemic over the network (slows down the simulation when TRUE)
@@ -90,7 +88,8 @@ if (plot.spread) {
       node.colour[person] <- "blue"
     }
   }
-  plot(network.i,layout=fixlayout, main="Time = 0", vertex.color=node.colour)
+  plot(network.i,layout=fixlayout, main="No group criteria", vertex.color=node.colour)
+  legend('topleft', legend=c('Child', 'Adult', 'Elder'), col = c('pink', 'blue', 'green'), cex = 0.8, pch=19)
 }
 
 # Define transmission probability based on age group for all connections based on transmitter
@@ -106,8 +105,9 @@ for (n in 1:nrow(links)){
 }
 
 color_vector <- c('orange', 'blue', 'red', 'green', 'purple', 'pink', 'yellow')
+repeats <- as.data.frame(matrix(nrow=simlength)) # initialize matrix with zero rows
 
-for (nn in 1:1){
+for (nn in 1:10){
   time <- c()
   num_infected <- c()
   
@@ -116,6 +116,7 @@ for (nn in 1:1){
   patientzero <- sample(N,1) # select 'patient zero'
   
   infected[patientzero] <- TRUE
+  
   for (i in 1:simlength) {
     discordant.links <- which(xor(infected[links[,1]],infected[links[,2]])) # find the indeces of links that connect an infected individual to an uninfected
     
@@ -147,15 +148,15 @@ for (nn in 1:1){
     
     num_infected[i] <- sum(infected, na.rm = TRUE)
     time[i] <- i
-  
   }
   
-  if (nn == 1){
-    plot(time, num_infected, type = 'b', pch=16, col = color_vector[nn], main=' Same probs: 33% child') 
-  }
-  else{
-    lines(time, num_infected, type = 'b', pch=16, col = color_vector[nn])
-  }
+  repeats[,nn] <- num_infected
 }
 
 
+# Get median of repetitions
+repeats$median = apply(repeats, 1, median, na.rm=T)
+repeats
+plot(row.names(repeats), repeats$median, type = 'b', pch=16, col = 'green', main='63% child', xlab = 'Time', ylab = '# of infected', font.lab = 2)
+
+lines(row.names(repeats), repeats$median, type = 'b', pch=16, col = 'red', main='13% child', xlab = 'Time', ylab = '# of infected', font.lab = 2)
